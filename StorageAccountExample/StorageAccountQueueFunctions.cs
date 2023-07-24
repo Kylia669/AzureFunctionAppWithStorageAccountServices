@@ -1,10 +1,14 @@
 ﻿using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
+using System.Runtime.Serialization;
+using System.IO;
+using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
 
 namespace StorageAccountExample
 {
-    internal class StorageAccountQueueFunctions
+    public class StorageAccountQueueFunctions
     {
         private const string BlobConnection = "blobConnection";
         private const string QueueName = "queue";
@@ -16,23 +20,28 @@ namespace StorageAccountExample
         }
 
         [FunctionName("QueueTrigger")]
-        public void BlobTrigger([QueueTrigger(QueueName, Connection = BlobConnection)] QueueMessage message)
+        public void QueueTrigger([QueueTrigger(QueueName, Connection = BlobConnection)] string myQueueItem)
         {
-            _logger.LogInformation($"Queue messaged: {message.Message}");
+            _logger.LogInformation($"Queue messaged: {myQueueItem}");
         }
 
         [FunctionName("QueueOutput")]
         [return: Queue(QueueName, Connection = BlobConnection)]
-        public QueueMessage BlobOutputAsync([HttpTrigger(AuthorizationLevel.Anonymous, "POST", Route = "queue-add")] QueueMessage message)
+        public async Task<string> QueueOutputAsync([HttpTrigger(AuthorizationLevel.Anonymous, "POST", Route = "queue-add")] HttpRequest req)
         {
-            _logger.LogInformation($"Queue messaged added: {message.Message}");
-            return message;
+            using var reader = new StreamReader(req.Body);
+            var body = await reader.ReadToEndAsync();
+            _logger.LogInformation($"Queue messaged added: {body}");
+            return body;
         }
 
+        
+    }
 
-        public class QueueMessage
-        {
-            public string Message { get; set; }
-        }
+    [DataContract]
+    public record QueueMessage
+    {
+        [DataMember]
+        public string Message { get; set; }
     }
 }

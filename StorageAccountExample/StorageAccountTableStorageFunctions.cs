@@ -5,6 +5,9 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Azure;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace StorageAccountExample
 {
@@ -20,7 +23,7 @@ namespace StorageAccountExample
         }
 
         [FunctionName("TableInput")]
-        public async Task<IActionResult> BlobTriggerAsync([HttpTrigger(AuthorizationLevel.Anonymous, "GET", Route = "table-get/{partition}/{id}")] string id,
+        public async Task<IActionResult> BlobTriggerAsync([HttpTrigger(AuthorizationLevel.Anonymous, "GET", Route = "table-get/{partition}/{id}")] HttpRequest req,
             [Table(TableName, "{partition}", "{id}")] TableEntity item)
         {
             return new OkObjectResult(item);
@@ -28,10 +31,12 @@ namespace StorageAccountExample
 
         [FunctionName("TableOutput")]
         [return: Table(TableName, Connection = BlobConnection)]
-        public TableEntity BlobOutputAsync([HttpTrigger(AuthorizationLevel.Anonymous, "POST", Route = "queue-add")] TableEntity message)
+        public async Task<TableEntity> BlobOutputAsync([HttpTrigger(AuthorizationLevel.Anonymous, "POST", Route = "table-add")] HttpRequest req)
         {
-            _logger.LogInformation($"Table item added: {message.Name}");
-            return message;
+            using var reader = new StreamReader(req.Body);
+            var body = await reader.ReadToEndAsync();
+            _logger.LogInformation($"Queue messaged added: {body}");
+            return JsonConvert.DeserializeObject<TableEntity>(body);
         }
 
         public class TableEntity : Azure.Data.Tables.ITableEntity

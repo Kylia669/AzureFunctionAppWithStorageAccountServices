@@ -18,7 +18,9 @@ var queueName = 'queue'
 var tableStorageName = 'table'
 
 var storageOwnerRoleDefinitionResourceId = '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
-
+var storageQueueDataContributorRoleId = '/providers/Microsoft.Authorization/roleDefinitions/974c5e8b-45b9-4653-ba55-5f855dd0fb88'
+var storageQueueDataQueueMessageSenderRoleId = '/providers/Microsoft.Authorization/roleDefinitions/c6a89b2d-59bc-44d0-9896-0f6e12d7b80a'
+var storageTableDataContributorRoleId = '/providers/Microsoft.Authorization/roleDefinitions/0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
@@ -69,6 +71,32 @@ resource storageOwnerPermission 'Microsoft.Authorization/roleAssignments@2020-10
   properties: {
 	principalId: managedIdentity.properties.principalId
 	roleDefinitionId: storageOwnerRoleDefinitionResourceId
+  }
+}
+
+resource storageQueueContributorPermission 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  name: guid(storageAccount.id, functionAppName, storageQueueDataContributorRoleId)
+  scope: storageAccount
+  properties: {
+	principalId: managedIdentity.properties.principalId
+	roleDefinitionId: storageQueueDataContributorRoleId
+  }
+}
+
+resource storageQueueSenderPermission 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  name: guid(storageAccount.id, functionAppName, storageQueueDataQueueMessageSenderRoleId)
+  scope: storageAccount
+  properties: {
+	principalId: managedIdentity.properties.principalId
+	roleDefinitionId: storageQueueDataQueueMessageSenderRoleId
+  }
+}
+resource storageTableContributorPermission 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  name: guid(storageAccount.id, functionAppName, storageTableDataContributorRoleId)
+  scope: storageAccount
+  properties: {
+	principalId: managedIdentity.properties.principalId
+	roleDefinitionId: storageTableDataContributorRoleId
   }
 }
 
